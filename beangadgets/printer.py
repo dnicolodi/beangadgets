@@ -8,7 +8,7 @@ from beancount.core import data
 
 
 class EntryPrinter(printer.EntryPrinter):
-    def __init__(self, currency_column=61):
+    def __init__(self, currency_column=66):
         super().__init__()
         self.target_currency_column = currency_column
 
@@ -23,6 +23,13 @@ class EntryPrinter(printer.EntryPrinter):
         width = self.target_currency_column - len(amount) - len(tolerance) - len('0000-00-00 balance   ')
             
         oss.write(f'{entry.date} balance {entry.account:{width}s} {amount} {tolerance}{entry.amount.currency}\n')
+        self.write_metadata(entry.meta, oss)
+
+    def Open(self, entry, oss):
+        currencies = ','.join(entry.currencies or [])
+        booking = '"{}"'.format(entry.booking.name) if entry.booking is not None else ''
+        oss.write(f'{entry.date} open {entry.account} {currencies} {booking}'.rstrip())
+        oss.write('\n')
         self.write_metadata(entry.meta, oss)
         
     def Transaction(self, entry, oss):

@@ -15,7 +15,7 @@ def print_entries(entries, output=None):
     output = output or sys.stdout
     eprinter = printer.EntryPrinter(None, False)
     prev_entry_type = None
-    
+
     for entry in entries:
         entry_type = type(entry)
         if entry_type in (data.Transaction, data.Commodity) or entry_type is not prev_entry_type:
@@ -40,17 +40,12 @@ def main(filename):
 
     entries.sort(key=sortkey)
 
-    entries_by_year_month = {}
-    for key, group in groupby(entries, lambda entry: (entry.date.year, entry.date.month)):
-        entries_by_year_month[key] = list(group)
-
-    for year, keys in groupby(entries_by_year_month.keys(), lambda x: x[0]):
+    for year, year_entries in groupby(entries, lambda entry: entry.date.year):
         print(f';;; {year:}')
-        for k in keys:
-            date = datetime.date(*k, 1)
-            print(f';;;; {date:%Y %B}')
-            print_entries(entries_by_year_month[k])
+        for month, month_entries in groupby(year_entries, lambda entry: entry.date.month):
+            print(f';;;; {datetime.date(year, month, 1):%Y %B}')
+            print_entries(month_entries)
             print('')
-        
+
 if __name__ == '__main__':
     main()

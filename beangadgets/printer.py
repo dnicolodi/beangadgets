@@ -19,9 +19,9 @@ class EntryPrinter(printer.EntryPrinter):
         tolerance = ''
         if entry.tolerance:
             tolerance = '~ {} '.format(self.dformat.format(entry.tolerance, entry.amount.currency))
-            
+
         width = self.target_currency_column - len(amount) - len(tolerance) - len('0000-00-00 balance   ')
-            
+
         oss.write(f'{entry.date} balance {entry.account:{width}s} {amount} {tolerance}{entry.amount.currency}\n')
         self.write_metadata(entry.meta, oss)
 
@@ -31,7 +31,7 @@ class EntryPrinter(printer.EntryPrinter):
         oss.write(f'{entry.date} open {entry.account} {currencies} {booking}'.rstrip())
         oss.write('\n')
         self.write_metadata(entry.meta, oss)
-        
+
     def Transaction(self, entry, oss):
         # Compute the string for the payee and narration line.
         strings = []
@@ -45,13 +45,13 @@ class EntryPrinter(printer.EntryPrinter):
 
         oss.write('{e.date} {e.flag} {}\n'.format(' '.join(strings), e=entry))
 
-        if entry.tags:            
+        if entry.tags:
             for tag in sorted(entry.tags):
                 print(f'{self.prefix}#{tag}', file=oss)
         if entry.links:
             for link in sorted(entry.links):
                 print(f'{self.prefix}^{link}', file=oss)
-        
+
         self.write_metadata(entry.meta, oss)
 
         rows = [self.render_posting_strings(posting) for posting in entry.postings]

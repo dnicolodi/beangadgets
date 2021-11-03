@@ -28,8 +28,7 @@ class EntryPrinter(printer.EntryPrinter):
     def Open(self, entry, oss):
         currencies = ','.join(entry.currencies or [])
         booking = '"{}"'.format(entry.booking.name) if entry.booking is not None else ''
-        oss.write(f'{entry.date} open {entry.account} {currencies} {booking}'.rstrip())
-        oss.write('\n')
+        print(f'{entry.date} open {entry.account} {currencies} {booking}'.rstrip(), file=oss)
         self.write_metadata(entry.meta, oss)
 
     def Transaction(self, entry, oss):
@@ -54,32 +53,30 @@ class EntryPrinter(printer.EntryPrinter):
 
         self.write_metadata(entry.meta, oss)
 
-        rows = [self.render_posting_strings(posting) for posting in entry.postings]
-        strs_account = [row[0] for row in rows]
-        strs_position, width_position = printer.align_position_strings(row[1] for row in rows)
-        strs_weight, width_weight = printer.align_position_strings(row[2] for row in rows)
+        if not entry.postings:
+            return
 
-        width_number = re.search(r'[A-Z]', strs_position[0]).start()
+        rows = [self.render_posting_strings(posting) for posting in entry.postings]
+        accounts = [row[0] for row in rows]
+        positions, width_position = printer.align_position_strings(row[1] for row in rows)
+        weights, width_weight = printer.align_position_strings(row[2] for row in rows)
+
+        width_number = re.search(r'[A-Z]', positions[0]).start()
         width_account = self.target_currency_column - width_number - len(self.prefix) - 2
 
         if self.render_weight and any(map(inventory.has_nontrivial_balance, entry.postings)):
-            fmt = "{0}{{:{1}}}  {{:{2}}}  ; {{:{3}}}\n".format(
-                self.prefix, width_account, width_position, width_weight).format
-            for posting, account, position, weight in zip(entry.postings,
-                                                          strs_account,
-                                                          strs_position,
-                                                          strs_weight):
-                oss.write(fmt(account, position, weight))
+            for posting, account, position, weight in zip(entry.postings, accounts, positions, weights):
+                print(f"{self.prefix}{account:{width_account}}  "
+                      f"{position:{width_position}}  ; "
+                      f"{weight:{width_weight}}".rstrip(), file=oss)
                 if posting.meta:
-                    self.write_metadata(posting.meta, oss, '    ')
+                    self.write_metadata(posting.meta, oss, 2 * self.prefix)
         else:
-            fmt_str = "{0}{{:{1}}}  {{:{2}}}".format(
-                self.prefix, width_account, max(1, width_position))
-            fmt = fmt_str.format
-            for posting, account, position in zip(entry.postings, strs_account, strs_position):
-                print(fmt(account, position).rstrip(), file=oss)
+            for posting, account, position in zip(entry.postings, accounts, positions):
+                print(f"{self.prefix}{account:{width_account}}  "
+                      f"{position:{width_position}}".rstrip(), file=oss)
                 if posting.meta:
-                    self.write_metadata(posting.meta, oss, '    ')
+                    self.write_metadata(posting.meta, oss, 2 * self.prefix)
 
 
 def print_entries(entries, output=sys.stdout):
